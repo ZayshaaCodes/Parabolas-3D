@@ -8,13 +8,16 @@ namespace MarchingQuads
 {
     public class MarchingQuadsGrid
     {
-        public int CellCountPerSide = 10;
+        public int CellCountPerSide = 50;
         public int verCountPerSide => CellCountPerSide + 1;
 
         public float3[,] pointGrid;
         public float[,] valueGrid;
         public bool2[,] crossingEdges;
         public float3x2[,] crossingEdgePoses;
+
+        public bool2[,] crossingInnerEdges;
+        public float3x2[,] crossingInnerEdgePoses;
 
         public float cellUnitSize = 5;
 
@@ -24,7 +27,12 @@ namespace MarchingQuads
         public MarchingQuadsGrid()
         {
             InitializeGrid();
-            SetValueData((i, j) => noise.cnoise(new float2(i * .3f, j * .3f)));
+        }
+
+        public MarchingQuadsGrid(int cellCount)
+        {
+            CellCountPerSide = cellCount;
+            InitializeGrid();
         }
 
         public void InitializeGrid()
@@ -34,6 +42,9 @@ namespace MarchingQuads
             valueGrid         = new float[pCount, pCount];
             crossingEdges     = new bool2[pCount, pCount];
             crossingEdgePoses = new float3x2[pCount, pCount];
+
+            crossingInnerEdges     = new bool2[pCount, pCount];
+            crossingInnerEdgePoses = new float3x2[pCount, pCount];
 
             LoopGridPoints((i, j, c) => { pointGrid[i, j] = new Vector3(i, j) * cellUnitSize; });
         }
@@ -56,33 +67,41 @@ namespace MarchingQuads
             {
                 var pos = pointGrid[i, j];
 
-                var val   = valueGrid[i, j];
-                var valOn = val > 0;
+                var val        = valueGrid[i, j];
+                var valOn      = val > 0;
+                var valInnerOn = val > -.1f;
 
                 // update horizontal edges
                 if (i < c - 1)
                 {
-                    var rightPos = pointGrid[i + 1, j];
+                    var otherPos   = pointGrid[i + 1, j];
+                    var otherVal   = valueGrid[i + 1, j];
+                    var otherValOn = otherVal > 0;
 
-                    var rightVal   = valueGrid[i + 1, j];
-                    var rightValOn = rightVal > 0;
-
-                    var isCrossing = rightValOn != valOn;
+                    var isCrossing = otherValOn != valOn;
                     crossingEdges[i, j].x      = isCrossing;
-                    crossingEdgePoses[i, j].c0 = math.lerp(pos, rightPos, math.unlerp(val, rightVal, 0));
+                    crossingEdgePoses[i, j].c0 = math.lerp(pos, otherPos, math.unlerp(val, otherVal, 0));
+
+                    var otherValInnerOn = otherVal > -.1f;
+                    var isInnerCrossing = otherValInnerOn != valInnerOn;
+                    crossingInnerEdges[i, j].x      = isInnerCrossing;
+                    crossingInnerEdgePoses[i, j].c0 = math.lerp(pos, otherPos, math.unlerp(val, otherVal, -.1f));
                 }
 
                 if (j < c - 1)
                 {
-                    var upPos = pointGrid[i, j + 1];
+                    var otherPos   = pointGrid[i, j + 1];
+                    var otherVal   = valueGrid[i, j + 1];
+                    var otherValOn = otherVal > 0;
 
-                    var upVal   = valueGrid[i, j + 1];
-                    var ipValOn = upVal > 0;
+                    var isCrossing = otherValOn != valOn;
+                    crossingEdges[i, j].y      = isCrossing;
+                    crossingEdgePoses[i, j].c1 = math.lerp(pos, otherPos, math.unlerp(val, otherVal, 0));
 
-                    var isCrossing = ipValOn != valOn;
-                    crossingEdges[i, j].y = isCrossing;
-                    if (isCrossing)
-                        crossingEdgePoses[i, j].c1 = math.lerp(pos, upPos, math.unlerp(val, upVal, 0));
+                    var otherValInnerOn = otherVal > -.1f;
+                    var isInnerCrossing = otherValInnerOn != valInnerOn;
+                    crossingInnerEdges[i, j].y      = isInnerCrossing;
+                    crossingInnerEdgePoses[i, j].c1 = math.lerp(pos, otherPos, math.unlerp(val, otherVal, -.1f));
                 }
             });
         }
@@ -109,15 +128,21 @@ namespace MarchingQuads
                 float3x2 crossingPos = crossingEdgePoses[i, j];
 
                 // Gizmos.color = v > bias ? Color.white : Color.black;
-                Gizmos.color = Color.Lerp(Color.white, Color.black, Mathf.InverseLerp(-.2f, .2f, v));
+                Gizmos.color = Color.Lerp(Color.white, Color.black, Mathf.InverseLerp(-.2f, 0, v));
 
                 Gizmos.DrawWireCube(point, Vector3.one * 1);
-                
+
                 Gizmos.color = Color.red;
                 if (i < c - 1 && crossing.x) Gizmos.DrawWireSphere(crossingPos.c0, .25f);
                 if (j < c - 1 && crossing.y) Gizmos.DrawWireSphere(crossingPos.c1, .25f);
             });
-            
+
+            LoopGridPoints((i, j, c) =>
+            {
+                var cell = GetCellData(i, j);
+                cell.DrawGizmo();
+            }, true);
+
             DrawMouseOverGizmo();
         }
 

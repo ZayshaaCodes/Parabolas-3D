@@ -16,7 +16,8 @@ namespace MarchingQuads
 
         private void OnEnable()
         {
-            grid = new MarchingQuadsGrid();
+            grid = new MarchingQuadsGrid(cellCount);
+            OnValidate();
         }
 
         private void OnValidate()
@@ -32,6 +33,14 @@ namespace MarchingQuads
         private void OnDrawGizmos()
         {
             grid.GrawGizmos(); 
+        }
+        
+        private void Update()
+        {
+            if (!Application.isPlaying) return;
+            
+            scale += Time.deltaTime * .01f;
+            grid.SetValueData((x, y) => noise.cnoise(new float2(x * scale, y * scale)));
         }
     }
 }
