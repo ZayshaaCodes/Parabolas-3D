@@ -1,0 +1,9 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" editor-extension-mode="True">
+    <ui:VisualElement style="flex-direction: row;">
+        <ui:Label tabindex="-1" text="name" display-tooltip-when-elided="true" binding-path="name" />
+        <ui:Label tabindex="-1" text="name" display-tooltip-when-elided="true" binding-path="test" />
+        <ui:Label tabindex="-1" text="count" display-tooltip-when-elided="true" binding-path="coolSubItems.Array.size" />
+        <ui:VisualElement style="flex-grow: 1;" />
+        <ui:Button tabindex="-1" text="Button" display-tooltip-when-elided="true" />
+    </ui:VisualElement>
+</ui:UXML>
