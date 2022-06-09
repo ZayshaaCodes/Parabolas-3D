@@ -1,28 +1,25 @@
 ﻿using Unity.Mathematics;
-using UnityEditor;
 using UnityEngine;
 
-namespace MarchingQuads
+namespace ProcGen
 {
     public struct CellData
     {
         public int2 CellId;
-        public float3x4 Corners;  // indexes for each corner
-        public float4 CornerVals; // indexes for each corner
+        public float3x4 Corners; //cornerPosition
+        public bool4 CornerVals; // indexes for each corner
         public int ShapeType;
         public bool4 Edges;
         public float3x4 EdgePositions;
 
-        public bool slopeLeft;
+        // public bool4 InnerEdges;
+        // public float3x4 InnerEdgePositions;
 
-        public bool4 InnerEdges;
-        public float3x4 InnerEdgePositions;
-
-        public CellData(int x, int y, MarchingQuadsGrid grid) : this(new(x, y), grid)
+        public CellData(int x, int y, MarchingSquaresGrid grid) : this(new(x, y), grid)
         {
         }
 
-        public CellData(int2 p, MarchingQuadsGrid grid)
+        public CellData(int2 p, MarchingSquaresGrid grid)
         {
             CellId = p;
 
@@ -34,7 +31,7 @@ namespace MarchingQuads
                 c3 = grid.pointGrid[p.x + 1, p.y]
             };
 
-            CornerVals = new float4() // clockwise from base point
+            CornerVals = new bool4() // clockwise from base point
             {
                 x = grid.valueGrid[p.x, p.y],
                 y = grid.valueGrid[p.x, p.y + 1],
@@ -57,21 +54,19 @@ namespace MarchingQuads
                 grid.crossingEdgePoses[p.x, p.y][0]);
 
 
-            InnerEdges = new bool4( // clockwise from base point
-                grid.crossingInnerEdges[p.x, p.y][1],
-                grid.crossingInnerEdges[p.x, p.y + 1][0],
-                grid.crossingInnerEdges[p.x + 1, p.y][1],
-                grid.crossingInnerEdges[p.x, p.y][0]
-            );
-
-            InnerEdgePositions = new float3x4(
-                grid.crossingInnerEdgePoses[p.x, p.y][1],
-                grid.crossingInnerEdgePoses[p.x, p.y + 1][0],
-                grid.crossingInnerEdgePoses[p.x + 1, p.y][1],
-                grid.crossingInnerEdgePoses[p.x, p.y][0]
-            );
-
-            slopeLeft = false;
+            // InnerEdges = new bool4( // clockwise from base point
+            //     grid.crossingInnerEdges[p.x, p.y][1],
+            //     grid.crossingInnerEdges[p.x, p.y + 1][0],
+            //     grid.crossingInnerEdges[p.x + 1, p.y][1],
+            //     grid.crossingInnerEdges[p.x, p.y][0]
+            // );
+            //
+            // InnerEdgePositions = new float3x4(
+            //     grid.crossingInnerEdgePoses[p.x, p.y][1],
+            //     grid.crossingInnerEdgePoses[p.x, p.y + 1][0],
+            //     grid.crossingInnerEdgePoses[p.x + 1, p.y][1],
+            //     grid.crossingInnerEdgePoses[p.x, p.y][0]
+            // );
 
             ShapeType = 0;
             for (int i = 0; i < 4; i++)
@@ -87,8 +82,8 @@ namespace MarchingQuads
 
         public void DrawGizmo()
         {
-            DrawEdge(Edges,      EdgePositions, 0);
-            DrawEdge(InnerEdges, InnerEdgePositions ,-.1f);
+            DrawEdge(Edges,      EdgePositions,      0);
+            // DrawEdge(InnerEdges, InnerEdgePositions, -.1f);
         }
 
         private void DrawEdge(bool4 edgeState, float3x4 edgePositions, float bias)
@@ -102,22 +97,7 @@ namespace MarchingQuads
             switch (c)
             {
                 case 4:
-                    Gizmos.color = Color.yellow;
-
-                    var (p1, p2, p3, p4)
-                        = (edgePositions[0], edgePositions[1], edgePositions[2], edgePositions[3]);
-                    var (v1, v2, v3, v4)
-                        = (CornerVals[0], CornerVals[1], CornerVals[2], CornerVals[3]);
-                    if (v1 > bias)
-                    {
-                        Gizmos.DrawLine(p1, p2);
-                        Gizmos.DrawLine(p3, p4);
-                    }
-                    else
-                    {
-                        Gizmos.DrawLine(p1, p4);
-                        Gizmos.DrawLine(p2, p3);
-                    }
+                    Gizmos.color = Color.yellow;                    
                     break;
                 case 2:
                     int p1Id = -1;
